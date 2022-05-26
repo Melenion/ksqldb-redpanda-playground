@@ -1,0 +1,40 @@
+version: '3.7'
+services:
+  redpanda:
+    command:
+    - redpanda
+    - start
+    - --smp
+    - '1'
+    - --reserve-memory
+    - 0M
+    - --overprovisioned
+    - --node-id
+    - '0'
+    - --kafka-addr 0.0.0.0:9092
+    - --advertise-kafka-addr redpanda:9092
+    - --pandaproxy-addr 0.0.0.0:8082
+    - --advertise-pandaproxy-addr redpanda:8082
+    - --set redpanda.enable_transactions=true
+    - --set redpanda.enable_idempotence=true
+    # without this, ksqldb crashes on startup
+    - --set redpanda.cluster_id=something
+    # NOTE: Please use the latest version here!
+    image: docker.vectorized.io/vectorized/redpanda:v21.11.14
+    container_name: redpanda-1
+    ports:
+    - 9092:9092
+  ksqldb:
+    image: ghcr.io/melenion/ksqldb:sha-7b66fbe
+    volumes:
+      - .:/etc/local
+    entrypoint:
+      - /bin/bash
+      - -x
+      - -c
+    command:
+      - ksql-server-start /etc/local/server.properties
+        # environment:
+        # - KSQL_JVM_PERFORMANCE_OPTS="-XX:+ExplicitGCInvokesConcurrent -XX:NewRatio=1 -Djava.awt.headless=true"
+    ports:
+      - 8088:8088
